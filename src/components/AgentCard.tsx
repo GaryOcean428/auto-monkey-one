@@ -12,6 +12,7 @@ import { Play, Pause, RefreshCw, HardDrive, Cpu } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface AgentCardProps {
+  id: string;
   name?: string;
   status?: "running" | "paused" | "stopped";
   memoryUsage?: number;
@@ -27,6 +28,7 @@ import { useThrottle } from "@/hooks/useThrottle";
 
 const AgentCard = memo(
   function AgentCard({
+    id,
     name = "Agent Smith",
     status = "running",
     memoryUsage = 45,
@@ -42,9 +44,13 @@ const AgentCard = memo(
 
     const updateAgentStatus = useAgentStore((state) => state.updateAgentStatus);
 
-    const handleStatusChange = () => {
-      const newStatus = status === "running" ? "paused" : "running";
-      updateAgentStatus(name, newStatus);
+    const handleStatusChange = async () => {
+      try {
+        const newStatus = status === "running" ? "paused" : "running";
+        await updateAgentStatus(id, newStatus);
+      } catch (error) {
+        console.error("Failed to update agent status:", error);
+      }
     };
 
     return (

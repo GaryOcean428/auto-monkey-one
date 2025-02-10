@@ -1,17 +1,13 @@
+export type AgentStatus = "running" | "paused" | "stopped";
+
 export interface Agent {
   id: string;
   name: string;
-  status: "running" | "paused" | "stopped";
+  status: AgentStatus;
   memoryUsage: number;
   cpuUsage: number;
   taskProgress: number;
   currentTask: string;
-}
-
-export interface AgentTemplate {
-  id: number;
-  name: string;
-  description: string;
 }
 
 export interface AgentMetrics {

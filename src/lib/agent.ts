@@ -1,41 +1,37 @@
 import { supabase } from "./supabase";
 import { Database } from "../types/supabase";
+import { AgentStatus } from "@/types/agent";
 
 export type AgentInstance =
   Database["public"]["Tables"]["agent_instances"]["Row"];
 export type AgentMemory = Database["public"]["Tables"]["agent_memory"]["Row"];
 export type Task = Database["public"]["Tables"]["task_queue"]["Row"];
 
+// Simulated API calls for demo purposes
 export async function createAgent(
   name: string,
-  type: Database["public"]["Enums"]["agent_type"],
-) {
-  const { data, error } = await supabase
-    .from("agent_instances")
-    .insert({
-      name,
-      agent_type: type,
-      status: "idle",
-      metadata: {
-        created_at: new Date().toISOString(),
-        memory_usage: 0,
-        cpu_usage: 0,
-      },
-    })
-    .select()
-    .single();
+  type: string,
+): Promise<{ id: string }> {
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-  if (error) throw error;
-  return data;
+  // Return mock data
+  return {
+    id: Math.random().toString(36).substr(2, 9),
+  };
 }
 
-export async function updateAgentStatus(id: string, status: string) {
-  const { error } = await supabase
-    .from("agent_instances")
-    .update({ status })
-    .eq("id", id);
+export async function updateAgentStatusAPI(
+  id: string,
+  status: AgentStatus,
+): Promise<void> {
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-  if (error) throw error;
+  // Simulate random failure
+  if (Math.random() < 0.1) {
+    throw new Error(`Failed to update agent ${id} status to ${status}`);
+  }
 }
 
 export async function createTask(
@@ -43,31 +39,31 @@ export async function createTask(
   type: string,
   agentId?: string,
   priority: number = 1,
-) {
-  const { data, error } = await supabase
-    .from("task_queue")
-    .insert({
-      description,
-      task_type: type,
-      agent_id: agentId,
-      priority,
-      status: "pending",
-    })
-    .select()
-    .single();
+): Promise<Task> {
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-  if (error) throw error;
-  return data;
+  // Return mock data
+  return {
+    id: Math.random().toString(36).substr(2, 9),
+    description,
+    task_type: type,
+    agent_id: agentId,
+    priority,
+    status: "pending",
+    created_at: new Date().toISOString(),
+  } as Task;
 }
 
-export async function storeMemory(agentId: string, content: string) {
-  const { error } = await supabase.from("agent_memory").insert({
-    agent_id: agentId,
-    content,
-    metadata: {
-      timestamp: new Date().toISOString(),
-    },
-  });
+export async function storeMemory(
+  agentId: string,
+  content: string,
+): Promise<void> {
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-  if (error) throw error;
+  // Simulate random failure
+  if (Math.random() < 0.1) {
+    throw new Error(`Failed to store memory for agent ${agentId}`);
+  }
 }

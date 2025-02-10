@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { z } from "zod";
+import type { Agent, AgentMetrics, AgentStatus } from "@/types/agent";
 
 const AgentSchema = z.object({
   id: z.string(),
@@ -34,7 +35,7 @@ const MetricsSchema = z.object({
 import { Agent, AgentMetrics } from "../types/agent";
 import {
   createAgent as createAgentAPI,
-  updateAgentStatus as updateAgentStatusAPI,
+  updateAgentStatusAPI,
 } from "../lib/agent";
 
 interface AgentState {
@@ -42,8 +43,11 @@ interface AgentState {
   metrics: AgentMetrics;
   isLoading: boolean;
   error: string | null;
+  initialized: boolean;
+  initialize: () => Promise<void>;
   createAgent: (agent: Omit<Agent, "id">) => Promise<void>;
   updateAgentStatus: (id: string, status: Agent["status"]) => Promise<void>;
+  restartAgent: (id: string) => Promise<void>;
   updateMetrics: (metrics: Partial<AgentMetrics>) => void;
 }
 
@@ -63,11 +67,74 @@ const defaultMetrics: AgentMetrics = {
   ],
 };
 
-export const useAgentStore = create<AgentState>((set) => ({
+export const useAgentStore = create<AgentState>((set, get) => ({
   agents: [],
   metrics: defaultMetrics,
   isLoading: false,
   error: null,
+  initialized: false,
+
+  initialize: async () => {
+    // Return early if already initialized
+    if (get().initialized) {
+      set({ isLoading: false });
+      return;
+    }
+
+    try {
+      set({ isLoading: true, error: null });
+
+      // Initialize with default agents immediately
+      const defaultAgents = [
+        {
+          id: "1",
+          name: "Data Processor",
+          status: "running",
+          memoryUsage: 45,
+          cpuUsage: 32,
+          taskProgress: 67,
+          currentTask: "Processing data streams",
+        },
+        {
+          id: "2",
+          name: "Web Scraper",
+          status: "paused",
+          memoryUsage: 28,
+          cpuUsage: 15,
+          taskProgress: 89,
+          currentTask: "Analyzing web content",
+        },
+      ];
+
+      set({ agents: defaultAgents, initialized: true, isLoading: false });
+
+      // Start periodic metrics updates
+      const intervalId = setInterval(() => {
+        const { agents } = get();
+        if (!agents.length) return; // Guard against empty agents
+
+        const updatedAgents = agents.map((agent) => ({
+          ...agent,
+          memoryUsage: Math.min(
+            100,
+            agent.memoryUsage + (Math.random() * 10 - 5),
+          ),
+          cpuUsage: Math.min(100, agent.cpuUsage + (Math.random() * 10 - 5)),
+          taskProgress: Math.min(100, agent.taskProgress + Math.random() * 5),
+        }));
+        set({ agents: updatedAgents });
+      }, 5000);
+
+      // Store interval ID for cleanup
+      (window as any).__agentUpdateInterval = intervalId;
+    } catch (error) {
+      set({
+        error: error.message || "Failed to initialize agents",
+        initialized: true,
+        isLoading: false,
+      });
+    }
+  },
 
   createAgent: async (newAgent) => {
     try {
@@ -84,7 +151,7 @@ export const useAgentStore = create<AgentState>((set) => ({
 
   updateAgentStatus: async (id, status) => {
     try {
-      set({ isLoading: true });
+      set({ isLoading: true, error: null });
       await updateAgentStatusAPI(id, status);
       set((state) => ({
         agents: state.agents.map((agent) =>
@@ -94,6 +161,47 @@ export const useAgentStore = create<AgentState>((set) => ({
       }));
     } catch (error) {
       set({ error: error.message, isLoading: false });
+      throw new Error(
+        error.message ||
+          `Failed to ${status === "running" ? "pause" : "start"} agent`,
+      );
+    }
+  },
+
+  restartAgent: async (id) => {
+    try {
+      set({ isLoading: true, error: null });
+      // Stop the agent
+      await updateAgentStatusAPI(id, "stopped");
+      set((state) => ({
+        agents: state.agents.map((agent) =>
+          agent.id === id
+            ? {
+                ...agent,
+                status: "stopped",
+                taskProgress: 0,
+                currentTask: "Restarting...",
+              }
+            : agent,
+        ),
+      }));
+
+      // Small delay to simulate shutdown
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Start the agent
+      await updateAgentStatusAPI(id, "running");
+      set((state) => ({
+        agents: state.agents.map((agent) =>
+          agent.id === id
+            ? { ...agent, status: "running", memoryUsage: 0, cpuUsage: 0 }
+            : agent,
+        ),
+        isLoading: false,
+      }));
+    } catch (error) {
+      set({ error: error.message, isLoading: false });
+      throw new Error(error.message || "Failed to restart agent");
     }
   },
 

@@ -15,6 +15,9 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Suspense fallback={<LoadingSpinner />}>
+          {/* For the tempo routes */}
+          {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}
+
           <Routes>
             <Route
               path="/auth/login"
@@ -48,8 +51,9 @@ function App() {
                 </AuthMiddleware>
               }
             />
+            {/* Add this before the catchall route */}
             {import.meta.env.VITE_TEMPO === "true" && (
-              <Route path="/tempobook/*" element={useRoutes(routes)} />
+              <Route path="/tempobook/*" />
             )}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

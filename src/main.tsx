@@ -6,7 +6,13 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 
 import { TempoDevtools } from "tempo-devtools";
-TempoDevtools.init();
+import { registerCleanup } from "./lib/cleanup";
+
+// Initialize Tempo devtools after DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+  TempoDevtools.init();
+  registerCleanup();
+});
 
 const basename = import.meta.env.BASE_URL;
 
