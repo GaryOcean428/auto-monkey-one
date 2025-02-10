@@ -1,23 +1,35 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-export function AuthMiddleware({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
-  const navigate = useNavigate();
+interface AuthMiddlewareProps {
+  children: ReactNode;
+  requireAuth?: boolean;
+  requireGuest?: boolean;
+}
 
-  useEffect(() => {
-    if (!loading && !session) {
-      navigate("/auth/login");
-    }
-  }, [session, loading, navigate]);
+export function AuthMiddleware({
+  children,
+  requireAuth = false,
+  requireGuest = false,
+}: AuthMiddlewareProps) {
+  const { session, loading, initialized } = useAuth();
+  const location = useLocation();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background">
-        <div className="animate-pulse text-primary">Loading...</div>
-      </div>
-    );
+  // Show loading state during initialization
+  if (loading || !initialized) {
+    return <LoadingSpinner />;
+  }
+
+  // Handle auth-required routes
+  if (requireAuth && !session) {
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  }
+
+  // Handle guest-only routes (like login)
+  if (requireGuest && session) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

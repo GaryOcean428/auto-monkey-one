@@ -1,7 +1,9 @@
 import { Provider } from "@supabase/supabase-js";
 import { Github, Mail, Chrome } from "lucide-react";
 
-export const socialProviders = {
+import { SocialProviders, AuthConfig } from "@/types/auth";
+
+export const socialProviders: SocialProviders = {
   google: {
     id: "google",
     name: "Google",
@@ -27,7 +29,7 @@ export const socialProviders = {
   },
 };
 
-export const authConfig = {
+export const authConfig: AuthConfig = {
   mfa: {
     enabled: true,
     enforced: false,

@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { authService } from "@/lib/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { socialProviders, authConfig } from "@/lib/auth-config";
+import { Provider } from "@supabase/supabase-js";
 import { signInWithProvider } from "@/lib/auth";
 import { validatePassword } from "@/lib/auth-utils";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Card,
   CardContent,
@@ -34,20 +35,9 @@ export default function AuthForm() {
   const [rateLimitExceeded, setRateLimitExceeded] = useState(false);
   const [rateLimitReset, setRateLimitReset] = useState<Date | null>(null);
   const navigate = useNavigate();
+  const { signIn } = useAuth();
 
   const handleAuth = async (e: React.FormEvent) => {
-    const analysis = await analyzeAuthAttempt(email);
-
-    if (analysis.isSuspicious) {
-      showToast.error("Suspicious activity detected. Please try again later.");
-      return;
-    }
-
-    if (analysis.requiresMFA && !mfaEnabled) {
-      setMfaEnabled(true);
-      return;
-    }
-
     e.preventDefault();
     setLoading(true);
 
@@ -69,13 +59,10 @@ export default function AuthForm() {
         }
       }
 
-      const data =
-        mode === "signup"
-          ? await authService.signUp(email, password, rememberMe)
-          : await authService.signIn(email, password, rememberMe);
+      const data = await signIn(email, password);
 
-      if (error) {
-        if (error.message.includes("rate limit")) {
+      if (data.error) {
+        if (data.error.message.includes("rate limit")) {
           setRateLimitExceeded(true);
           const resetTime = new Date();
           resetTime.setSeconds(
@@ -86,7 +73,7 @@ export default function AuthForm() {
             `Too many attempts. Please try again after ${resetTime.toLocaleTimeString()}`,
           );
         }
-        throw error;
+        throw data.error;
       }
 
       if (mode === "signup") {

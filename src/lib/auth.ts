@@ -1,31 +1,18 @@
-import { useEffect, useState } from "react";
-import { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { authService } from "./services/auth.service";
+import { showToast } from "./toast";
+import { authConfig } from "./auth-config";
+import { aiConfig } from "./ai-config";
+import { Provider } from "@supabase/supabase-js";
+import { socialProviders } from "./auth-config";
+import {
+  AuthAnalysis,
+  MFASetupResponse,
+  MFAVerifyResponse,
+} from "@/types/auth";
 
 let authAttempts = 0;
 
-export function useAuth() {
-  const [session, setSession] = useState<Session | null>(null);
-
-  useEffect(() => {
-    // Get initial session
-    authService.getSession().then(setSession);
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  return session;
-}
-
-async function analyzeAuthAttempt(email: string) {
+async function analyzeAuthAttempt(email: string): Promise<AuthAnalysis> {
   try {
     // Select model based on security needs and complexity
     let model;
@@ -95,7 +82,7 @@ export async function signInWithProvider(provider: Provider) {
   }
 }
 
-export async function setupMFA() {
+export async function setupMFA(): Promise<MFASetupResponse> {
   try {
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
@@ -108,7 +95,7 @@ export async function setupMFA() {
   }
 }
 
-export async function verifyMFA(code: string) {
+export async function verifyMFA(code: string): Promise<MFAVerifyResponse> {
   try {
     const { data, error } = await supabase.auth.mfa.verify({
       factorId: "totp",
@@ -122,50 +109,22 @@ export async function verifyMFA(code: string) {
   }
 }
 
-export async function signOut() {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    showToast.success("Successfully signed out");
-  } catch (error) {
-    showToast.error(error.message);
-  }
-}
-
-export async function resetPassword(email: string) {
-  try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    });
-    if (error) throw error;
-    showToast.success("Password reset email sent");
-  } catch (error) {
-    showToast.error(error.message);
-  }
-}
-
 export async function updatePassword(password: string) {
   try {
-    const { error } = await supabase.auth.updateUser({
-      password,
-    });
-    if (error) throw error;
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      if (error.message.includes("stronger password")) {
+        throw new Error(
+          "Please use a stronger password. It should include numbers, special characters, and uppercase letters.",
+        );
+      }
+      throw error;
+    }
     showToast.success("Password updated successfully");
   } catch (error) {
     showToast.error(error.message);
+    throw error;
   }
 }
 
-export async function getSession() {
-  try {
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
-    if (error) throw error;
-    return session;
-  } catch (error) {
-    showToast.error(error.message);
-    return null;
-  }
-}
+export { analyzeAuthAttempt };
