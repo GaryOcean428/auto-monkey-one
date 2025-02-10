@@ -77,6 +77,7 @@ export default function AuthForm() {
               options: {
                 emailRedirectTo: `${window.location.origin}/auth/callback`,
                 data: {
+                  first_name: email.split("@")[0], // Temporary name from email
                   remember_me: rememberMe,
                 },
               },
@@ -84,9 +85,6 @@ export default function AuthForm() {
           : await supabase.auth.signInWithPassword({
               email,
               password,
-              options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-              },
             });
 
       if (error) {

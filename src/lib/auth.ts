@@ -1,13 +1,44 @@
+import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { showToast } from "./toast";
 import { authConfig } from "./auth-config";
 import { aiConfig } from "./ai-config";
 import { Provider } from "@supabase/supabase-js";
+import {
+  AuthAnalysis,
+  MFASetupResponse,
+  MFAVerifyResponse,
+} from "@/types/auth";
 import { generateMFABackupCodes, validatePassword } from "./auth-utils";
 
 let authAttempts = 0;
 
-async function analyzeAuthAttempt(email: string) {
+export function useAuth() {
+  const [session, setSession] =
+    useState<ReturnType<typeof supabase.auth.getSession>["data"]["session"]>(
+      null,
+    );
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return session;
+}
+
+async function analyzeAuthAttempt(email: string): Promise<AuthAnalysis> {
   try {
     // Select model based on security needs and complexity
     let model;
@@ -76,7 +107,7 @@ export async function signInWithProvider(provider: Provider) {
   }
 }
 
-export async function setupMFA() {
+export async function setupMFA(): Promise<MFASetupResponse> {
   try {
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
@@ -89,7 +120,7 @@ export async function setupMFA() {
   }
 }
 
-export async function verifyMFA(code: string) {
+export async function verifyMFA(code: string): Promise<MFAVerifyResponse> {
   try {
     const { data, error } = await supabase.auth.mfa.verify({
       factorId: "totp",
