@@ -6,7 +6,7 @@ import { AuthState, UserResponse } from "@/types/auth";
 import { authConfig } from "@/lib/auth-config";
 
 let authAttempts = 0;
-const maxAttempts = authConfig.rateLimiting.maxAttempts;
+const {maxAttempts} = authConfig.rateLimiting;
 const windowSeconds = authConfig.rateLimiting.windowSeconds;
 let lastAttemptTime = 0;
 
