@@ -17,6 +17,7 @@ import {
   Bot,
   Code,
   Database,
+  GitBranch as Workflow,
 } from "lucide-react";
 import AgentChat from "../chat/AgentChat";
 import WorkflowCanvas from "./WorkflowCanvas";
