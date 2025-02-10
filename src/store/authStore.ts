@@ -163,7 +163,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initialize: async () => {
-    if (get().initialized) return;
+    if (get().initialized) {
 
     try {
       set({ loading: true, error: null });
