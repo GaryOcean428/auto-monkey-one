@@ -8,7 +8,6 @@ import {
   Navigate,
 } from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { ProtectedRoute } from "./components/ProtectedRoute";
 import Home from "./components/home";
 import Login from "./routes/auth/login";
 import AuthCallback from "./routes/auth/callback";
@@ -16,6 +15,7 @@ import ResetPassword from "./routes/auth/reset-password";
 import routes from "tempo-routes";
 import { useAuthStore } from "./store/authStore";
 import { AuthProvider } from "./contexts/AuthContext";
+import { AuthMiddleware } from "./middleware/AuthMiddleware";
 
 function App() {
   const navigate = useNavigate();
@@ -42,15 +42,36 @@ function App() {
       <AuthProvider>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route
+              path="/auth/login"
+              element={
+                <AuthMiddleware requireGuest>
+                  <Login />
+                </AuthMiddleware>
+              }
+            />
+            <Route
+              path="/auth/callback"
+              element={
+                <AuthMiddleware>
+                  <AuthCallback />
+                </AuthMiddleware>
+              }
+            />
+            <Route
+              path="/auth/reset-password"
+              element={
+                <AuthMiddleware>
+                  <ResetPassword />
+                </AuthMiddleware>
+              }
+            />
             <Route
               path="/"
               element={
-                <ProtectedRoute>
+                <AuthMiddleware requireAuth>
                   <Home />
-                </ProtectedRoute>
+                </AuthMiddleware>
               }
             />
             {import.meta.env.VITE_TEMPO === "true" && (
