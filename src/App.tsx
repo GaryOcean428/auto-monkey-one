@@ -47,7 +47,7 @@ function App() {
         }
       >
         <Routes>
-          <Route path="/auth/login" element={<Login />} />
+          <Route path="auth/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/auth/reset-password" element={<ResetPassword />} />
           <Route

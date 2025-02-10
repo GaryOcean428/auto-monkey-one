@@ -1,4 +1,36 @@
 import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
+import { z } from "zod";
+
+const AgentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.enum(["running", "paused", "stopped"]),
+  memoryUsage: z.number().min(0).max(100),
+  cpuUsage: z.number().min(0).max(100),
+  taskProgress: z.number().min(0).max(100),
+  currentTask: z.string(),
+});
+
+const MetricsSchema = z.object({
+  efficiency: z.number().min(0).max(100),
+  completionRate: z.number().min(0).max(100),
+  resourceUtilization: z.number().min(0).max(100),
+  dailyTasks: z.array(
+    z.object({
+      date: z.string(),
+      completed: z.number(),
+      total: z.number(),
+    }),
+  ),
+  resourceHistory: z.array(
+    z.object({
+      timestamp: z.string(),
+      cpu: z.number().min(0).max(100),
+      memory: z.number().min(0).max(100),
+    }),
+  ),
+});
 import { Agent, AgentMetrics } from "../types/agent";
 import {
   createAgent as createAgentAPI,

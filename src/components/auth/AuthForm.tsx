@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { supabase } from "@/lib/supabase";
+import { authService } from "@/lib/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,25 +69,10 @@ export default function AuthForm() {
         }
       }
 
-      const { data, error } =
+      const data =
         mode === "signup"
-          ? await supabase.auth.signUp({
-              email,
-              password,
-              options: {
-                emailRedirectTo: `${window.location.origin}/auth/callback`,
-                data: {
-                  remember_me: rememberMe,
-                },
-              },
-            })
-          : await supabase.auth.signInWithPassword({
-              email,
-              password,
-              options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-              },
-            });
+          ? await authService.signUp(email, password, rememberMe)
+          : await authService.signIn(email, password, rememberMe);
 
       if (error) {
         if (error.message.includes("rate limit")) {
@@ -164,6 +149,7 @@ export default function AuthForm() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10"
                     required
+                    autoComplete="current-password"
                   />
                 </div>
                 {passwordErrors.length > 0 && (

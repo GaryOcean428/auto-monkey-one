@@ -7,6 +7,12 @@ export const socialProviders = {
     name: "Google",
     icon: Chrome,
     scopes: ["email", "profile"],
+    options: {
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
   },
   github: {
     id: "github",

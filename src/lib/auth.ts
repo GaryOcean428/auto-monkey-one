@@ -1,11 +1,29 @@
+import { useEffect, useState } from "react";
+import { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { showToast } from "./toast";
-import { authConfig } from "./auth-config";
-import { aiConfig } from "./ai-config";
-import { Provider } from "@supabase/supabase-js";
-import { generateMFABackupCodes, validatePassword } from "./auth-utils";
+import { authService } from "./services/auth.service";
 
 let authAttempts = 0;
+
+export function useAuth() {
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    // Get initial session
+    authService.getSession().then(setSession);
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return session;
+}
 
 async function analyzeAuthAttempt(email: string) {
   try {
@@ -66,6 +84,7 @@ export async function signInWithProvider(provider: Provider) {
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        ...socialProviders[provider]?.options,
       },
     });
     if (error) throw error;
